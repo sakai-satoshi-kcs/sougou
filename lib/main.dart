@@ -4,8 +4,10 @@ import 'screen/calendar.dart';
 import 'screen/mainscreen.dart';
 import 'screen/reminder.dart';
 import 'screen/timetable.dart';
+import 'package:timezone/data/latest.dart' as tz;
 
 void main() {
+  tz.initializeTimeZones(); // タイムゾーン初期化
   runApp(const MyApp());
 }
 
@@ -38,15 +40,15 @@ class MainApp extends StatefulWidget {
   const MainApp({super.key});
 
   @override
-  _MainAppState createState() => _MainAppState();
+  MainAppState createState() => MainAppState(); // クラス名修正
 }
 
-class _MainAppState extends State<MainApp> {
+class MainAppState extends State<MainApp> {
+  // クラス名修正
   int _selectedIndex = 2;
 
-  // 修正: const を削除
   final List<Widget> _screens = [
-    AlarmScreen(),
+    AlarmScreen(), // const を削除
     CalendarScreen(),
     MainScreen(),
     ReminderScreen(),
@@ -66,17 +68,19 @@ class _MainAppState extends State<MainApp> {
       bottomNavigationBar: BottomNavigationBar(
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.alarm), label: 'アラーム'),
-          BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'カレンダー'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.calendar_today), label: 'カレンダー'),
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'メイン'),
-          BottomNavigationBarItem(icon: Icon(Icons.notifications), label: 'リマインダー'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.notifications), label: 'リマインダー'),
           BottomNavigationBarItem(icon: Icon(Icons.table_chart), label: '時間割'),
         ],
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        backgroundColor: const Color(0xFF1E1E1E),
-        selectedItemColor: Colors.blueAccent,
-        unselectedItemColor: Colors.white60,
-        showUnselectedLabels: true,
+        backgroundColor: const Color(0xFF1E1E1E), // ボトムバー背景色
+        selectedItemColor: Colors.blueAccent, // 選択中のアイコン色
+        unselectedItemColor: Colors.white60, // 未選択のアイコン色
+        showUnselectedLabels: true, // 未選択アイテムのラベルを表示
       ),
     );
   }
