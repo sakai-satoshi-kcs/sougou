@@ -10,6 +10,8 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -21,6 +23,8 @@ class MyApp extends StatelessWidget {
 }
 
 class MainApp extends StatefulWidget {
+  const MainApp({super.key});
+
   @override
   _MainAppState createState() => _MainAppState();
 }
@@ -42,23 +46,26 @@ class _MainAppState extends State<MainApp> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        items: [
-          BottomNavigationBarItem(icon: Icon(Icons.alarm), label: 'アラーム'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_today), label: 'カレンダー'),
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'メイン'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.notifications), label: 'リマインダー'),
-          BottomNavigationBarItem(icon: Icon(Icons.table_chart), label: '時間割'),
-        ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-      ),
-    );
-  }
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    body: _screens[_selectedIndex],
+    bottomNavigationBar: BottomNavigationBar(
+      items: const [
+        BottomNavigationBarItem(icon: Icon(Icons.alarm), label: 'アラーム'),
+        BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'カレンダー'),
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'メイン'),
+        BottomNavigationBarItem(icon: Icon(Icons.notifications), label: 'リマインダー'),
+        BottomNavigationBarItem(icon: Icon(Icons.table_chart), label: '時間割'),
+      ],
+      currentIndex: _selectedIndex,
+      onTap: _onItemTapped,
+      backgroundColor: const Color.fromARGB(255, 0, 0, 0), // ナビゲーションバーの背景色
+      selectedItemColor: Colors.white, // 選択されたアイテムの色
+      unselectedItemColor: Colors.grey, // 未選択アイテムの色
+      showUnselectedLabels: true, // 未選択アイテムのラベルを表示する
+    ),
+  );
+}
+
 }
