@@ -1,79 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/data/latest.dart' as tz;
-import 'package:timezone/timezone.dart' as tz;
+import 'package:intl/intl.dart';
 
 class ReminderScreen extends StatefulWidget {
+  const ReminderScreen({Key? key}) : super(key: key);
+
   @override
   _ReminderScreenState createState() => _ReminderScreenState();
 }
 
 class _ReminderScreenState extends State<ReminderScreen> {
   final List<Map<String, dynamic>> _reminders = [];
-  final FlutterLocalNotificationsPlugin _notificationsPlugin =
-      FlutterLocalNotificationsPlugin();
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeNotifications();
-    tz.initializeTimeZones(); // タイムゾーン初期化
-  }
-
-  void _initializeNotifications() async {
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    const InitializationSettings initializationSettings =
-        InitializationSettings(android: initializationSettingsAndroid);
-
-    await _notificationsPlugin.initialize(initializationSettings);
-  }
-
-  Future<void> _scheduleNotification(Map<String, dynamic> reminder) async {
-    final DateTime reminderTime = DateTime(
-      reminder['date'].year,
-      reminder['date'].month,
-      reminder['date'].day,
-      reminder['time'].hour,
-      reminder['time'].minute,
-    ).subtract(Duration(minutes: 15));
-
-    if (reminderTime.isAfter(DateTime.now())) {
-      final tz.TZDateTime tzReminderTime =
-          tz.TZDateTime.from(reminderTime, tz.local);
-
-      final AndroidNotificationDetails androidPlatformChannelSpecifics =
-          AndroidNotificationDetails(
-        'reminder_channel', // チャンネルID
-        'リマインダー通知', // チャンネル名
-        channelDescription: 'リマインダーの通知を受け取ります',
-        importance: Importance.high,
-        priority: Priority.high,
-      );
-
-      final NotificationDetails platformChannelSpecifics =
-          NotificationDetails(android: androidPlatformChannelSpecifics);
-
-      await _notificationsPlugin.zonedSchedule(
-        reminder.hashCode, // 一意のID
-        'リマインダー: ${reminder['name']}',
-        '予定時刻の15分前です。',
-        tzReminderTime,
-        platformChannelSpecifics,
-        androidAllowWhileIdle: true,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('リマインダー')),
+      appBar: AppBar(title: const Text('リマインダー')),
       body: _reminders.isEmpty
-          ? Center(child: Text('リマインダーがありません'))
+          ? const Center(child: Text('リマインダーがありません'))
           : ListView.builder(
               itemCount: _reminders.length,
               itemBuilder: (context, index) {
@@ -91,7 +34,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
                       title: Center(
                         child: Text(
                           reminder['name'],
-                          style: TextStyle(
+                          style: const TextStyle(
                               fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                       ),
@@ -100,11 +43,11 @@ class _ReminderScreenState extends State<ReminderScreen> {
                         children: [
                           Text(
                             '日付: ${DateFormat('yyyy/MM/dd').format(reminder['date'])}',
-                            style: TextStyle(fontSize: 16),
+                            style: const TextStyle(fontSize: 16),
                           ),
                           Text(
                             '時刻: ${reminder['time'].format(context)}',
-                            style: TextStyle(fontSize: 16),
+                            style: const TextStyle(fontSize: 16),
                           ),
                         ],
                       ),
@@ -115,7 +58,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddReminderDialog,
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
       ),
     );
   }
@@ -144,7 +87,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
                 children: [
                   TextFormField(
                     controller: _nameController,
-                    decoration: InputDecoration(labelText: '名前'),
+                    decoration: const InputDecoration(labelText: '名前'),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return '名前を入力してください';
@@ -154,19 +97,19 @@ class _ReminderScreenState extends State<ReminderScreen> {
                   ),
                   TextFormField(
                     controller: _memoController,
-                    decoration: InputDecoration(labelText: 'メモ'),
+                    decoration: const InputDecoration(labelText: 'メモ'),
                   ),
                   TextFormField(
                     controller: _urlController,
-                    decoration: InputDecoration(labelText: 'URL'),
+                    decoration: const InputDecoration(labelText: 'URL'),
                     keyboardType: TextInputType.url,
                   ),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
                   ListTile(
                     title: Text(selectedDate == null
                         ? '日付を選択'
                         : DateFormat('yyyy/MM/dd').format(selectedDate!)),
-                    trailing: Icon(Icons.calendar_today),
+                    trailing: const Icon(Icons.calendar_today),
                     onTap: () async {
                       final DateTime? picked = await showDatePicker(
                         context: context,
@@ -185,7 +128,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
                     title: Text(selectedTime == null
                         ? '時刻を選択'
                         : selectedTime!.format(context)),
-                    trailing: Icon(Icons.access_time),
+                    trailing: const Icon(Icons.access_time),
                     onTap: () async {
                       final TimeOfDay? picked = await showTimePicker(
                         context: context,
@@ -200,7 +143,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
                   ),
                   DropdownButtonFormField<String>(
                     value: repeat,
-                    decoration: InputDecoration(labelText: '繰り返し'),
+                    decoration: const InputDecoration(labelText: '繰り返し'),
                     items: ['なし', '毎日', '毎週', '毎月']
                         .map((value) => DropdownMenuItem(
                               value: value,
@@ -215,7 +158,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
                   ),
                   DropdownButtonFormField<String>(
                     value: priority,
-                    decoration: InputDecoration(labelText: '優先順位'),
+                    decoration: const InputDecoration(labelText: '優先順位'),
                     items: ['低', '中', '高']
                         .map((value) => DropdownMenuItem(
                               value: value,
@@ -237,7 +180,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
               onPressed: () {
                 Navigator.pop(context);
               },
-              child: Text('キャンセル'),
+              child: const Text('キャンセル'),
             ),
             TextButton(
               onPressed: () {
@@ -277,12 +220,10 @@ class _ReminderScreenState extends State<ReminderScreen> {
                     });
                   });
 
-                  _scheduleNotification(newReminder);
-
                   Navigator.pop(context);
                 }
               },
-              child: Text('保存'),
+              child: const Text('保存'),
             ),
           ],
         ),
@@ -296,7 +237,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
       builder: (context) => AlertDialog(
         title: Text(
           reminder['name'],
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         content: SingleChildScrollView(
           child: Column(
@@ -304,32 +245,32 @@ class _ReminderScreenState extends State<ReminderScreen> {
             children: [
               Text(
                 'メモ: ${reminder['memo']}',
-                style: TextStyle(fontSize: 18),
+                style: const TextStyle(fontSize: 18),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 'URL: ${reminder['url']}',
-                style: TextStyle(fontSize: 18),
+                style: const TextStyle(fontSize: 18),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 '日付: ${DateFormat('yyyy/MM/dd').format(reminder['date'])}',
-                style: TextStyle(fontSize: 18),
+                style: const TextStyle(fontSize: 18),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 '時刻: ${reminder['time'].format(context)}',
-                style: TextStyle(fontSize: 18),
+                style: const TextStyle(fontSize: 18),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 '繰り返し: ${reminder['repeat']}',
-                style: TextStyle(fontSize: 18),
+                style: const TextStyle(fontSize: 18),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 '優先順位: ${reminder['priority']}',
-                style: TextStyle(fontSize: 18),
+                style: const TextStyle(fontSize: 18),
               ),
             ],
           ),
@@ -342,7 +283,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
               });
               Navigator.pop(context);
             },
-            child: Text(
+            child: const Text(
               '削除',
               style: TextStyle(fontSize: 18),
             ),
@@ -352,7 +293,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
               Navigator.pop(context);
               _showAddReminderDialog(reminder: reminder, index: index);
             },
-            child: Text(
+            child: const Text(
               '編集',
               style: TextStyle(fontSize: 18),
             ),
@@ -361,7 +302,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
             onPressed: () {
               Navigator.pop(context);
             },
-            child: Text(
+            child: const Text(
               '閉じる',
               style: TextStyle(fontSize: 18),
             ),
