@@ -2,6 +2,9 @@ name: sougou
 description: "A new Flutter project."
 publish_to: 'none'
 version: 0.1.0
+dependencies:
+  table_calendar: ^3.0.0
+
 
 environment:
   sdk: ^3.5.3
