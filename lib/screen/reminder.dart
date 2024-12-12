@@ -42,11 +42,11 @@ class _ReminderScreenState extends State<ReminderScreen> {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
-                            '日付: ${DateFormat('yyyy/MM/dd').format(reminder['date'])}',
+                            '日付: ${reminder['date'] != null ? DateFormat('yyyy/MM/dd').format(reminder['date']) : '未設定'}',
                             style: const TextStyle(fontSize: 16),
                           ),
                           Text(
-                            '時刻: ${reminder['time'].format(context)}',
+                            '時刻: ${reminder['time'] != null ? reminder['time'].format(context) : '未設定'}',
                             style: const TextStyle(fontSize: 16),
                           ),
                         ],
@@ -184,9 +184,8 @@ class _ReminderScreenState extends State<ReminderScreen> {
             ),
             TextButton(
               onPressed: () {
-                if (_formKey.currentState!.validate() &&
-                    selectedDate != null &&
-                    selectedTime != null) {
+                if (_formKey.currentState!.validate()) {
+                  // 日付や時刻が未選択でも保存できるよう変更
                   final newReminder = {
                     'name': _nameController.text,
                     'memo': _memoController.text,
@@ -203,19 +202,43 @@ class _ReminderScreenState extends State<ReminderScreen> {
                     } else {
                       _reminders[index] = newReminder;
                     }
+
+                    // 日付と時刻が両方設定されているものは優先的にソート
+                    // 未設定の場合は日付・時刻の順序を最後に回すようにする（任意）
                     _reminders.sort((a, b) {
+                      final aDate = a['date'];
+                      final aTime = a['time'];
+                      final bDate = b['date'];
+                      final bTime = b['time'];
+
+                      // 両方とも日付・時刻がnullなら常に同一とみなす
+                      if (aDate == null && aTime == null && bDate == null && bTime == null) {
+                        return 0;
+                      }
+
+                      // aがnullでbがnullでない場合、aを後ろへ
+                      if (aDate == null && aTime == null) {
+                        return 1;
+                      }
+
+                      // bがnullでaがnullでない場合、bを後ろへ
+                      if (bDate == null && bTime == null) {
+                        return -1;
+                      }
+
+                      // どちらか片方がnullの場合、nullの方を後ろへ
+                      if (aDate == null && bDate != null) return 1;
+                      if (bDate == null && aDate != null) return -1;
+                      if (aTime == null && bTime != null) return 1;
+                      if (bTime == null && aTime != null) return -1;
+
+                      // 両方とも日付と時刻がある場合は日時で比較
                       final DateTime aDateTime = DateTime(
-                          a['date'].year,
-                          a['date'].month,
-                          a['date'].day,
-                          a['time'].hour,
-                          a['time'].minute);
+                        aDate!.year, aDate.month, aDate.day,
+                        aTime!.hour, aTime.minute);
                       final DateTime bDateTime = DateTime(
-                          b['date'].year,
-                          b['date'].month,
-                          b['date'].day,
-                          b['time'].hour,
-                          b['time'].minute);
+                        bDate!.year, bDate.month, bDate.day,
+                        bTime!.hour, bTime.minute);
                       return aDateTime.compareTo(bDateTime);
                     });
                   });
@@ -254,12 +277,12 @@ class _ReminderScreenState extends State<ReminderScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                '日付: ${DateFormat('yyyy/MM/dd').format(reminder['date'])}',
+                '日付: ${reminder['date'] != null ? DateFormat('yyyy/MM/dd').format(reminder['date']) : '未設定'}',
                 style: const TextStyle(fontSize: 18),
               ),
               const SizedBox(height: 8),
               Text(
-                '時刻: ${reminder['time'].format(context)}',
+                '時刻: ${reminder['time'] != null ? reminder['time'].format(context) : '未設定'}',
                 style: const TextStyle(fontSize: 18),
               ),
               const SizedBox(height: 8),
