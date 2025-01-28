@@ -11,6 +11,7 @@ class Event {
   bool notify;
   String? url;
   String? memo;
+  Color color;
 
   Event({
     required this.title,
@@ -22,6 +23,7 @@ class Event {
     this.notify = false,
     this.url,
     this.memo,
+    this.color = Colors.blue,
   });
 }
 
@@ -45,15 +47,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return _events[day] ?? [];
   }
 
-  void _showAddEventDialog() {
-    final TextEditingController titleController = TextEditingController();
-    final TextEditingController urlController = TextEditingController();
-    final TextEditingController memoController = TextEditingController();
-    bool allDay = false;
-    DateTime? endDate;
-    TimeOfDay? startTime;
-    TimeOfDay? endTime;
-    bool notify = false;
+  void _showEventDialog({Event? event, required DateTime selectedDay}) {
+    final TextEditingController titleController = TextEditingController(
+        text: event != null ? event.title : '');
+    final TextEditingController urlController = TextEditingController(
+        text: event != null ? event.url ?? '' : '');
+    final TextEditingController memoController = TextEditingController(
+        text: event != null ? event.memo ?? '' : '');
+    bool allDay = event?.allDay ?? false;
+    DateTime? endDate = event?.endDate;
+    TimeOfDay? startTime = event?.startTime;
+    TimeOfDay? endTime = event?.endTime;
+    bool notify = event?.notify ?? false;
+    Color selectedColor = event?.color ?? Colors.blue;
 
     showDialog(
       context: context,
@@ -61,7 +67,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: Text("予定を追加"),
+              title: Text(event == null ? "予定を追加" : "予定を編集"),
               content: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,8 +145,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             onPressed: () async {
                               final pickedDate = await showDatePicker(
                                 context: context,
-                                initialDate: _selectedDay!,
-                                firstDate: _selectedDay!,
+                                initialDate: selectedDay,
+                                firstDate: selectedDay,
                                 lastDate: DateTime(2100),
                               );
                               if (pickedDate != null) {
@@ -177,6 +183,31 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       decoration: InputDecoration(labelText: "メモ"),
                       maxLines: 3,
                     ),
+                    SizedBox(height: 8),
+                    DropdownButton<Color>(
+                      value: selectedColor,
+                      onChanged: (color) {
+                        setState(() {
+                          selectedColor = color!;
+                        });
+                      },
+                      items: [
+                        Colors.blue,
+                        Colors.red,
+                        Colors.green,
+                        Colors.orange,
+                        Colors.purple,
+                      ]
+                          .map((color) => DropdownMenuItem(
+                                value: color,
+                                child: Container(
+                                  height: 20,
+                                  width: 20,
+                                  color: color,
+                                ),
+                              ))
+                          .toList(),
+                    ),
                   ],
                 ),
               ),
@@ -189,10 +220,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   onPressed: () {
                     if (titleController.text.isNotEmpty) {
                       setState(() {
-                        final event = Event(
+                        final newEvent = Event(
                           title: titleController.text,
                           allDay: allDay,
-                          startDate: _selectedDay!,
+                          startDate: selectedDay,
                           endDate: allDay ? endDate : null,
                           startTime: allDay ? null : startTime,
                           endTime: allDay ? null : endTime,
@@ -203,22 +234,68 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           memo: memoController.text.isNotEmpty
                               ? memoController.text
                               : null,
+                          color: selectedColor,
                         );
 
-                        if (_events[_selectedDay!] == null) {
-                          _events[_selectedDay!] = [];
+                        if (event == null) {
+                          if (_events[selectedDay] == null) {
+                            _events[selectedDay] = [];
+                          }
+                          _events[selectedDay]!.add(newEvent);
+                        } else {
+                          final index =
+                              _events[selectedDay]!.indexOf(event);
+                          if (index != -1) {
+                            _events[selectedDay]![index] = newEvent;
+                          }
                         }
-                        _events[_selectedDay!]!.add(event);
                       });
 
                       Navigator.pop(context);
                     }
                   },
-                  child: Text("追加"),
+                  child: Text(event == null ? "追加" : "保存"),
                 ),
               ],
             );
           },
+        );
+      },
+    );
+  }
+
+  void _showEventDetails(Event event, DateTime selectedDay) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(event.title),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (event.allDay)
+                Text("終日イベント: ${event.startDate.toLocal()} ～ ${event.endDate?.toLocal()}"),
+              if (!event.allDay)
+                Text(
+                    "時間: ${event.startTime?.format(context)} ～ ${event.endTime?.format(context)}"),
+              if (event.url != null) Text("URL: ${event.url}"),
+              if (event.memo != null) Text("メモ: ${event.memo}"),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _showEventDialog(event: event, selectedDay: selectedDay);
+              },
+              child: Text("編集"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("閉じる"),
+            ),
+          ],
         );
       },
     );
@@ -242,6 +319,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
               });
             },
             eventLoader: _getEventsForDay,
+            availableCalendarFormats: const {
+              CalendarFormat.month: '月',
+            },
           ),
           Expanded(
             child: ListView(
@@ -249,9 +329,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 return ListTile(
                   title: Text(event.title),
                   subtitle: event.allDay
-                      ? Text("終日イベント: ${event.startDate.toLocal()} 〜 ${event.endDate?.toLocal()}")
+                      ? Text(
+                          "終日イベント: ${event.startDate.toLocal()} 〜 ${event.endDate?.toLocal()}")
                       : Text(
                           "${event.startTime?.format(context)} - ${event.endTime?.format(context)}"),
+                  onTap: () => _showEventDetails(event, _selectedDay!),
                 );
               }).toList(),
             ),
@@ -259,7 +341,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddEventDialog,
+        onPressed: () => _showEventDialog(
+          selectedDay: _selectedDay!,
+        ),
         child: Icon(Icons.add),
       ),
     );
