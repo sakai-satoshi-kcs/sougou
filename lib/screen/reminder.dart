@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../models/reminder.dart';
 
 class ReminderScreen extends StatefulWidget {
-  const ReminderScreen({Key? key}) : super(key: key);
+  const ReminderScreen({super.key});
 
   @override
   _ReminderScreenState createState() => _ReminderScreenState();
 }
 
 class _ReminderScreenState extends State<ReminderScreen> {
-  final List<Map<String, dynamic>> _reminders = [];
+  final List<Reminder> _reminders = [];
 
   @override
   Widget build(BuildContext context) {
@@ -24,30 +25,34 @@ class _ReminderScreenState extends State<ReminderScreen> {
                 return GestureDetector(
                   onTap: () => _showReminderDetails(reminder, index),
                   child: Card(
+                    color:
+                        _getPriorityColor(reminder.priority).withOpacity(0.2),
                     shape: RoundedRectangleBorder(
-                      side: BorderSide(
-                          color: _getPriorityColor(reminder['priority']),
-                          width: 3),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: ListTile(
-                      title: Center(
-                        child: Text(
-                          reminder['name'],
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
+                      title: Text(
+                        reminder.name,
+                        style: const TextStyle(
+                          fontSize: 24, // タイトルのフォントサイズ
+                          fontWeight: FontWeight.bold,
                         ),
+                        textAlign: TextAlign.center, // 中央揃え
                       ),
                       subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center, // 中央揃え
                         children: [
                           Text(
-                            '日付: ${reminder['date'] != null ? DateFormat('yyyy/MM/dd').format(reminder['date']) : '未設定'}',
-                            style: const TextStyle(fontSize: 16),
+                            '日付: ${DateFormat('yyyy/MM/dd').format(reminder.date)}',
+                            style:
+                                const TextStyle(fontSize: 20), // サブタイトルのフォントサイズ
+                            textAlign: TextAlign.center,
                           ),
                           Text(
-                            '時刻: ${reminder['time'] != null ? reminder['time'].format(context) : '未設定'}',
-                            style: const TextStyle(fontSize: 16),
+                            '時刻: ${reminder.time.format(context)}',
+                            style:
+                                const TextStyle(fontSize: 20), // サブタイトルのフォントサイズ
+                            textAlign: TextAlign.center,
                           ),
                         ],
                       ),
@@ -63,17 +68,15 @@ class _ReminderScreenState extends State<ReminderScreen> {
     );
   }
 
-  void _showAddReminderDialog({Map<String, dynamic>? reminder, int? index}) {
-    final _formKey = GlobalKey<FormState>();
-    final _nameController =
-        TextEditingController(text: reminder?['name'] ?? '');
-    final _memoController =
-        TextEditingController(text: reminder?['memo'] ?? '');
-    final _urlController = TextEditingController(text: reminder?['url'] ?? '');
-    DateTime? selectedDate = reminder?['date'];
-    TimeOfDay? selectedTime = reminder?['time'];
-    String repeat = reminder?['repeat'] ?? 'なし';
-    String priority = reminder?['priority'] ?? '低';
+  void _showAddReminderDialog({Reminder? reminder, int? index}) {
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController(text: reminder?.name ?? '');
+    final memoController = TextEditingController(text: reminder?.memo ?? '');
+    final urlController = TextEditingController(text: reminder?.url ?? '');
+    DateTime? selectedDate = reminder?.date;
+    TimeOfDay? selectedTime = reminder?.time;
+    String repeat = reminder?.repeat ?? 'なし';
+    String priority = reminder?.priority ?? '低';
 
     showDialog(
       context: context,
@@ -82,11 +85,11 @@ class _ReminderScreenState extends State<ReminderScreen> {
           title: Text(reminder == null ? 'リマインダーを追加' : 'リマインダーを編集'),
           content: SingleChildScrollView(
             child: Form(
-              key: _formKey,
+              key: formKey,
               child: Column(
                 children: [
                   TextFormField(
-                    controller: _nameController,
+                    controller: nameController,
                     decoration: const InputDecoration(labelText: '名前'),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -96,11 +99,11 @@ class _ReminderScreenState extends State<ReminderScreen> {
                     },
                   ),
                   TextFormField(
-                    controller: _memoController,
+                    controller: memoController,
                     decoration: const InputDecoration(labelText: 'メモ'),
                   ),
                   TextFormField(
-                    controller: _urlController,
+                    controller: urlController,
                     decoration: const InputDecoration(labelText: 'URL'),
                     keyboardType: TextInputType.url,
                   ),
@@ -177,24 +180,23 @@ class _ReminderScreenState extends State<ReminderScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
+              onPressed: () => Navigator.pop(context),
               child: const Text('キャンセル'),
             ),
             TextButton(
               onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  // 日付や時刻が未選択でも保存できるよう変更
-                  final newReminder = {
-                    'name': _nameController.text,
-                    'memo': _memoController.text,
-                    'url': _urlController.text,
-                    'date': selectedDate,
-                    'time': selectedTime,
-                    'repeat': repeat,
-                    'priority': priority,
-                  };
+                if (formKey.currentState!.validate() &&
+                    selectedDate != null &&
+                    selectedTime != null) {
+                  final newReminder = Reminder(
+                    name: nameController.text,
+                    memo: memoController.text,
+                    url: urlController.text,
+                    date: selectedDate!,
+                    time: selectedTime!,
+                    repeat: repeat,
+                    priority: priority,
+                  );
 
                   setState(() {
                     if (index == null) {
@@ -202,43 +204,11 @@ class _ReminderScreenState extends State<ReminderScreen> {
                     } else {
                       _reminders[index] = newReminder;
                     }
-
-                    // 日付と時刻が両方設定されているものは優先的にソート
-                    // 未設定の場合は日付・時刻の順序を最後に回すようにする（任意）
                     _reminders.sort((a, b) {
-                      final aDate = a['date'];
-                      final aTime = a['time'];
-                      final bDate = b['date'];
-                      final bTime = b['time'];
-
-                      // 両方とも日付・時刻がnullなら常に同一とみなす
-                      if (aDate == null && aTime == null && bDate == null && bTime == null) {
-                        return 0;
-                      }
-
-                      // aがnullでbがnullでない場合、aを後ろへ
-                      if (aDate == null && aTime == null) {
-                        return 1;
-                      }
-
-                      // bがnullでaがnullでない場合、bを後ろへ
-                      if (bDate == null && bTime == null) {
-                        return -1;
-                      }
-
-                      // どちらか片方がnullの場合、nullの方を後ろへ
-                      if (aDate == null && bDate != null) return 1;
-                      if (bDate == null && aDate != null) return -1;
-                      if (aTime == null && bTime != null) return 1;
-                      if (bTime == null && aTime != null) return -1;
-
-                      // 両方とも日付と時刻がある場合は日時で比較
-                      final DateTime aDateTime = DateTime(
-                        aDate!.year, aDate.month, aDate.day,
-                        aTime!.hour, aTime.minute);
-                      final DateTime bDateTime = DateTime(
-                        bDate!.year, bDate.month, bDate.day,
-                        bTime!.hour, bTime.minute);
+                      final aDateTime = DateTime(a.date.year, a.date.month,
+                          a.date.day, a.time.hour, a.time.minute);
+                      final bDateTime = DateTime(b.date.year, b.date.month,
+                          b.date.day, b.time.hour, b.time.minute);
                       return aDateTime.compareTo(bDateTime);
                     });
                   });
@@ -254,47 +224,24 @@ class _ReminderScreenState extends State<ReminderScreen> {
     );
   }
 
-  void _showReminderDetails(Map<String, dynamic> reminder, int index) {
+  void _showReminderDetails(Reminder reminder, int index) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          reminder['name'],
+          reminder.name,
           style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'メモ: ${reminder['memo']}',
-                style: const TextStyle(fontSize: 18),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'URL: ${reminder['url']}',
-                style: const TextStyle(fontSize: 18),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '日付: ${reminder['date'] != null ? DateFormat('yyyy/MM/dd').format(reminder['date']) : '未設定'}',
-                style: const TextStyle(fontSize: 18),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '時刻: ${reminder['time'] != null ? reminder['time'].format(context) : '未設定'}',
-                style: const TextStyle(fontSize: 18),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '繰り返し: ${reminder['repeat']}',
-                style: const TextStyle(fontSize: 18),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '優先順位: ${reminder['priority']}',
-                style: const TextStyle(fontSize: 18),
-              ),
+              Text('メモ: ${reminder.memo ?? 'なし'}'),
+              Text('URL: ${reminder.url ?? 'なし'}'),
+              Text('日付: ${DateFormat('yyyy/MM/dd').format(reminder.date)}'),
+              Text('時刻: ${reminder.time.format(context)}'),
+              Text('繰り返し: ${reminder.repeat}'),
+              Text('優先順位: ${reminder.priority}'),
             ],
           ),
         ),
@@ -306,29 +253,18 @@ class _ReminderScreenState extends State<ReminderScreen> {
               });
               Navigator.pop(context);
             },
-            child: const Text(
-              '削除',
-              style: TextStyle(fontSize: 18),
-            ),
+            child: const Text('削除'),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               _showAddReminderDialog(reminder: reminder, index: index);
             },
-            child: const Text(
-              '編集',
-              style: TextStyle(fontSize: 18),
-            ),
+            child: const Text('編集'),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: const Text(
-              '閉じる',
-              style: TextStyle(fontSize: 18),
-            ),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('閉じる'),
           ),
         ],
       ),
