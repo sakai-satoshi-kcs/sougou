@@ -4,7 +4,7 @@ import 'screen/calendar.dart';
 import 'screen/mainscreen.dart';
 import 'screen/reminder.dart';
 import 'screen/timetable.dart';
-import 'screen/timetablecon.dart';
+import 'package:sougou/screen/timetablecon.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
 void main() {
@@ -49,11 +49,11 @@ class MainAppState extends State<MainApp> {
   int _selectedIndex = 2;
 
   final List<Widget> _screens = [
-        AlarmScreen(), // const を削除
-        CalendarScreen(),
-        MainScreen(),
-        ReminderScreen(),
-        TimetableScreen(),
+    AlarmScreen(), // const を削除
+    CalendarScreen(),
+    MainScreen(),
+    ReminderScreen(),
+    TimetableScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -69,9 +69,11 @@ class MainAppState extends State<MainApp> {
       bottomNavigationBar: BottomNavigationBar(
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.alarm), label: 'アラーム'),
-          BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'カレンダー'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.calendar_today), label: 'カレンダー'),
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'メイン'),
-          BottomNavigationBarItem(icon: Icon(Icons.notifications), label: 'リマインダー'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.notifications), label: 'リマインダー'),
           BottomNavigationBarItem(icon: Icon(Icons.table_chart), label: '時間割'),
         ],
         currentIndex: _selectedIndex,
