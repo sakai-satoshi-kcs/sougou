@@ -4,9 +4,8 @@ import 'screen/calendar.dart';
 import 'screen/mainscreen.dart';
 import 'screen/reminder.dart';
 import 'screen/timetable.dart';
-import 'package:sougou/screen/timetablecon.dart';
 import 'package:timezone/data/latest.dart' as tz;
-//ちんこ
+
 void main() {
   tz.initializeTimeZones(); // タイムゾーン初期化
   runApp(const MyApp());
