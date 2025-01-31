@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'models/alarm.dart'; // ← modelsディレクトリからのimport
+import 'models/reminder.dart';
 import 'screen/alarm.dart';
 import 'screen/calendar.dart';
 import 'screen/mainscreen.dart';
 import 'screen/reminder.dart';
 import 'screen/timetable.dart';
-import 'package:timezone/data/latest.dart' as tz;
 
 void main() {
   tz.initializeTimeZones(); // タイムゾーン初期化
@@ -26,10 +28,6 @@ class MyApp extends StatelessWidget {
           backgroundColor: Color(0xFF1E1E1E), // アプリバーの背景色
           foregroundColor: Colors.white, // アプリバーの文字色
         ),
-        textTheme: const TextTheme(
-          bodyLarge: TextStyle(color: Colors.white), // bodyText1 の代替
-          bodyMedium: TextStyle(color: Colors.white70), // bodyText2 の代替
-        ),
       ),
       home: const MainApp(),
     );
@@ -40,19 +38,18 @@ class MainApp extends StatefulWidget {
   const MainApp({super.key});
 
   @override
-  MainAppState createState() => MainAppState(); // クラス名修正
+  MainAppState createState() => MainAppState();
 }
 
 class MainAppState extends State<MainApp> {
-  // クラス名修正
   int _selectedIndex = 2;
 
   final List<Widget> _screens = [
-    AlarmScreen(), // const を削除
-    CalendarScreen(),
-    MainScreen(),
-    ReminderScreen(),
-    TimetableScreen(),
+    const AlarmScreen(),
+    const CalendarScreen(),
+    const MainScreen(),
+    const ReminderScreen(),
+    const TimetableScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -77,10 +74,6 @@ class MainAppState extends State<MainApp> {
         ],
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        backgroundColor: const Color(0xFF1E1E1E), // ボトムバー背景色
-        selectedItemColor: Colors.blueAccent, // 選択中のアイコン色
-        unselectedItemColor: Colors.white60, // 未選択のアイコン色
-        showUnselectedLabels: true, // 未選択アイテムのラベルを表示
       ),
     );
   }

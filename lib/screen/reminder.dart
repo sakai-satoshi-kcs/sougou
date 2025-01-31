@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz;
 import '../models/alarm.dart';
 
 class AlarmScreen extends StatefulWidget {
@@ -17,6 +19,7 @@ class AlarmScreenState extends State<AlarmScreen> {
   @override
   void initState() {
     super.initState();
+    tz.initializeTimeZones();
     _initializeNotifications();
   }
 
@@ -43,18 +46,18 @@ class AlarmScreenState extends State<AlarmScreen> {
       alarm.time.minute,
     );
 
-    if (scheduledTime.isBefore(DateTime.now())) return;
+    if (scheduledTime.isBefore(now)) return;
 
     final AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
       'alarm_channel',
       'Alarm Notifications',
-      sound: RawResourceAndroidNotificationSound(alarm.sound), // 🔔 アラーム音
       importance: Importance.high,
       priority: Priority.high,
+      sound: RawResourceAndroidNotificationSound(alarm.sound),
     );
 
-    const NotificationDetails details =
+    final NotificationDetails details =
         NotificationDetails(android: androidDetails);
 
     await _notificationsPlugin.zonedSchedule(
@@ -144,46 +147,18 @@ class AlarmScreenState extends State<AlarmScreen> {
                     },
                   ),
                   ListTile(
-                    title: Text(selectedTime.format(context)),
+                    title: Text(selectedTime?.format(context) ?? '時間を選択'),
                     trailing: const Icon(Icons.access_time),
                     onTap: () async {
                       final picked = await showTimePicker(
                         context: context,
-                        initialTime: selectedTime,
+                        initialTime: selectedTime ?? TimeOfDay.now(),
                       );
                       if (picked != null) {
                         setStateDialog(() {
                           selectedTime = picked;
                         });
                       }
-                    },
-                  ),
-                  const Text('繰り返し設定'),
-                  Wrap(
-                    children: List.generate(7, (index) {
-                      const days = ['月', '火', '水', '木', '金', '土', '日'];
-                      return ChoiceChip(
-                        label: Text(days[index]),
-                        selected: repeatDays[index],
-                        onSelected: (selected) {
-                          setStateDialog(() {
-                            repeatDays[index] = selected;
-                          });
-                        },
-                      );
-                    }),
-                  ),
-                  DropdownButtonFormField<String>(
-                    value: selectedSound,
-                    decoration: const InputDecoration(labelText: 'アラーム音'),
-                    items: ['default_alarm', 'morning_birds', 'loud_bell']
-                        .map((sound) =>
-                            DropdownMenuItem(value: sound, child: Text(sound)))
-                        .toList(),
-                    onChanged: (value) {
-                      setStateDialog(() {
-                        selectedSound = value!;
-                      });
                     },
                   ),
                 ],
@@ -197,19 +172,14 @@ class AlarmScreenState extends State<AlarmScreen> {
             TextButton(
               onPressed: () {
                 if (formKey.currentState!.validate()) {
-                  final newAlarm = Alarm(
-                    name: nameController.text,
-                    time: selectedTime!,
-                    repeatDays: repeatDays,
-                    sound: selectedSound,
-                    isEnabled: isEnabled,
-                  );
                   setState(() {
-                    if (index == null) {
-                      _alarms.add(newAlarm);
-                    } else {
-                      _alarms[index] = newAlarm;
-                    }
+                    _alarms.add(Alarm(
+                      name: nameController.text,
+                      time: selectedTime!,
+                      repeatDays: repeatDays,
+                      sound: selectedSound,
+                      isEnabled: isEnabled,
+                    ));
                   });
                   Navigator.pop(context);
                 }
@@ -220,14 +190,5 @@ class AlarmScreenState extends State<AlarmScreen> {
         ),
       ),
     );
-  }
-
-  String _formatRepeatDays(List<bool> repeatDays) {
-    const days = ['月', '火', '水', '木', '金', '土', '日'];
-    List<String> activeDays = [];
-    for (int i = 0; i < repeatDays.length; i++) {
-      if (repeatDays[i]) activeDays.add(days[i]);
-    }
-    return activeDays.isEmpty ? 'なし' : activeDays.join(', ');
   }
 }
