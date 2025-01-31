@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:timezone/data/latest.dart' as tz;
-import 'models/alarm.dart';
-import 'models/reminder.dart';
-import 'screen/alarm.dart' as alarm_screen; // ← 別名をつける
+import 'screen/alarm.dart' as alarm_screen;  // ← エイリアスを追加
 import 'screen/calendar.dart';
 import 'screen/mainscreen.dart';
-import 'screen/reminder.dart' as reminder_screen; // ← 別名をつける
+import 'screen/reminder.dart' as reminder_screen;  // ← エイリアスを追加
 import 'screen/timetable.dart';
 
 void main() {
@@ -45,10 +43,10 @@ class MainAppState extends State<MainApp> {
   int _selectedIndex = 2;
 
   final List<Widget> _screens = [
-    const alarm_screen.AlarmScreen(), // ← 明示的にする
-    const CalendarScreen(),
+    const alarm_screen.AlarmScreen(),  // ← エイリアスを適用
+    CalendarScreen(),
     const MainScreen(),
-    const reminder_screen.ReminderScreen(), // ← 明示的にする
+    const reminder_screen.ReminderScreen(),  // ← エイリアスを適用
     const TimetableScreen(),
   ];
 
