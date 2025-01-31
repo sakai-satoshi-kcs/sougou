@@ -23,6 +23,18 @@ class AlarmScreenState extends State<AlarmScreen> {
     _initializeNotifications();
   }
 
+  /// 繰り返し設定をフォーマットする関数
+  String _formatRepeatDays(List<bool> repeatDays) {
+    const days = ['月', '火', '水', '木', '金', '土', '日'];
+    List<String> activeDays = [];
+
+    for (int i = 0; i < repeatDays.length; i++) {
+      if (repeatDays[i]) activeDays.add(days[i]);
+    }
+
+    return activeDays.isEmpty ? 'なし' : activeDays.join(', ');
+  }
+
   void _initializeNotifications() async {
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
