@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'screen/alarm.dart';
+import 'package:timezone/data/latest.dart' as tz;
+
+import 'screen/alarm.dart' as alarm_screen;
 import 'screen/calendar.dart';
 import 'screen/mainscreen.dart';
-import 'screen/reminder.dart';
+import 'screen/reminder.dart' as reminder_screen;  // エイリアスの使用
 import 'screen/timetable.dart';
-import 'package:timezone/data/latest.dart' as tz;
 
 void main() {
   tz.initializeTimeZones(); // タイムゾーン初期化
@@ -19,16 +20,16 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter App',
       theme: ThemeData(
-        brightness: Brightness.dark, // ダークモード
+        brightness: Brightness.dark,
         primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: const Color.fromARGB(255, 18, 18, 18), // 背景色
+        scaffoldBackgroundColor: const Color.fromARGB(255, 18, 18, 18),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF1E1E1E), // アプリバーの背景色
-          foregroundColor: Colors.white, // アプリバーの文字色
+          backgroundColor: Color(0xFF1E1E1E),
+          foregroundColor: Colors.white,
         ),
         textTheme: const TextTheme(
-          bodyLarge: TextStyle(color: Colors.white), // bodyText1 の代替
-          bodyMedium: TextStyle(color: Colors.white70), // bodyText2 の代替
+          bodyLarge: TextStyle(color: Colors.white),
+          bodyMedium: TextStyle(color: Colors.white70),
         ),
       ),
       home: const MainApp(),
@@ -40,19 +41,18 @@ class MainApp extends StatefulWidget {
   const MainApp({super.key});
 
   @override
-  MainAppState createState() => MainAppState(); // クラス名修正
+  MainAppState createState() => MainAppState();
 }
 
 class MainAppState extends State<MainApp> {
-  // クラス名修正
   int _selectedIndex = 2;
 
   final List<Widget> _screens = [
-    AlarmScreen(), // const を削除
-    CalendarScreen(),
-    MainScreen(),
-    ReminderScreen(),
-    TimetableScreen(),
+    alarm_screen.AlarmScreen(),
+    const CalendarScreen(),  // const 修正
+    const MainScreen(),
+    reminder_screen.ReminderScreen(),  // エイリアスを使って解決
+    const TimetableScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -68,19 +68,17 @@ class MainAppState extends State<MainApp> {
       bottomNavigationBar: BottomNavigationBar(
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.alarm), label: 'アラーム'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_today), label: 'カレンダー'),
+          BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'カレンダー'),
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'メイン'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.notifications), label: 'リマインダー'),
+          BottomNavigationBarItem(icon: Icon(Icons.notifications), label: 'リマインダー'),
           BottomNavigationBarItem(icon: Icon(Icons.table_chart), label: '時間割'),
         ],
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        backgroundColor: const Color(0xFF1E1E1E), // ボトムバー背景色
-        selectedItemColor: Colors.blueAccent, // 選択中のアイコン色
-        unselectedItemColor: Colors.white60, // 未選択のアイコン色
-        showUnselectedLabels: true, // 未選択アイテムのラベルを表示
+        backgroundColor: const Color(0xFF1E1E1E),
+        selectedItemColor: Colors.blueAccent,
+        unselectedItemColor: Colors.white60,
+        showUnselectedLabels: true,
       ),
     );
   }
