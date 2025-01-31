@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:timezone/data/latest.dart' as tz;
-import 'models/alarm.dart'; // ← modelsディレクトリからのimport
+import 'models/alarm.dart';
 import 'models/reminder.dart';
-import 'screen/alarm.dart';
+import 'screen/alarm.dart' as alarm_screen; // ← 別名をつける
 import 'screen/calendar.dart';
 import 'screen/mainscreen.dart';
-import 'screen/reminder.dart';
+import 'screen/reminder.dart' as reminder_screen; // ← 別名をつける
 import 'screen/timetable.dart';
 
 void main() {
-  tz.initializeTimeZones(); // タイムゾーン初期化
+  tz.initializeTimeZones();
   runApp(const MyApp());
 }
 
@@ -21,12 +21,12 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter App',
       theme: ThemeData(
-        brightness: Brightness.dark, // ダークモード
+        brightness: Brightness.dark,
         primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: const Color.fromARGB(255, 18, 18, 18), // 背景色
+        scaffoldBackgroundColor: const Color.fromARGB(255, 18, 18, 18),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF1E1E1E), // アプリバーの背景色
-          foregroundColor: Colors.white, // アプリバーの文字色
+          backgroundColor: Color(0xFF1E1E1E),
+          foregroundColor: Colors.white,
         ),
       ),
       home: const MainApp(),
@@ -45,10 +45,10 @@ class MainAppState extends State<MainApp> {
   int _selectedIndex = 2;
 
   final List<Widget> _screens = [
-    const AlarmScreen(),
+    const alarm_screen.AlarmScreen(), // ← 明示的にする
     const CalendarScreen(),
     const MainScreen(),
-    const ReminderScreen(),
+    const reminder_screen.ReminderScreen(), // ← 明示的にする
     const TimetableScreen(),
   ];
 
