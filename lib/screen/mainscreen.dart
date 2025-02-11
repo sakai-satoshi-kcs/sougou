@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import '../models/reminder.dart'; // models から Reminder を明示的にインポート
-import 'calendar.dart';
-import 'reminder.dart';
-import 'timetable.dart';
 import 'package:intl/intl.dart';
+import '../models/reminder.dart';
+import '../models/alarm.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -13,12 +11,10 @@ class MainScreen extends StatefulWidget {
 }
 
 class MainScreenState extends State<MainScreen> {
-  List<Event> _todayEvents = [];
   List<Reminder> _todayReminders = [];
-  List<String> _todayTimetable = [];
-  final Map<DateTime, List<Event>> _events = {};
+  List<Alarm> _todayAlarms = [];
   final List<Reminder> _reminders = [];
-  List<List<String?>> timetable = List.generate(5, (_) => List.filled(4, null));
+  final List<Alarm> _alarms = [];
 
   @override
   void initState() {
@@ -28,18 +24,24 @@ class MainScreenState extends State<MainScreen> {
 
   void _loadData() {
     DateTime today = DateTime.now();
+
     setState(() {
-      _todayEvents = _events[today] ?? [];
       _todayReminders = _reminders
           .where((reminder) =>
               reminder.date.year == today.year &&
               reminder.date.month == today.month &&
               reminder.date.day == today.day)
           .toList();
-      int weekdayIndex = today.weekday - 1;
-      _todayTimetable = (weekdayIndex >= 0 && weekdayIndex < timetable.length)
-          ? timetable[weekdayIndex].whereType<String>().toList()
-          : [];
+
+      _todayAlarms = _alarms
+          .where((alarm) {
+            DateTime alarmDateTime = DateTime(
+              today.year, today.month, today.day, 
+              alarm.time.hour, alarm.time.minute
+            );
+            return alarmDateTime.isAfter(today);
+          })
+          .toList();
     });
   }
 
@@ -52,22 +54,31 @@ class MainScreenState extends State<MainScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('カレンダーの予定', style: Theme.of(context).textTheme.titleLarge),
-            ..._todayEvents.map((event) => ListTile(
-                  title: Text(event.title),
-                  subtitle: Text(
-                      '開始時間: ${DateFormat('HH:mm').format(event.startDate)}'),
-                )),
+            Text('アラーム', style: Theme.of(context).textTheme.titleLarge),
+            _todayAlarms.isNotEmpty
+            ? Column(
+              children: _todayAlarms.map((alarm) => ListTile(
+              title: Text('アラーム ${DateFormat('HH:mm').format(
+                DateTime(0, 0, 0, alarm.time.hour, alarm.time.minute)
+              )}'),
+              leading: const Icon(Icons.alarm),
+            )).toList(),
+      )
+    : const Text('今日のアラームはありません'),
+
             const Divider(),
+
             Text('リマインダー', style: Theme.of(context).textTheme.titleLarge),
-            ..._todayReminders.map((reminder) => ListTile(
-                  title: Text(reminder.name ?? '名称未設定'),
-                  subtitle: Text(
-                      DateFormat('yyyy/MM/dd HH:mm').format(reminder.date)),
-                )),
-            const Divider(),
-            Text('今日の時間割', style: Theme.of(context).textTheme.titleLarge),
-            ..._todayTimetable.map((subject) => ListTile(title: Text(subject))),
+            _todayReminders.isNotEmpty
+                ? Column(
+                    children: _todayReminders.map((reminder) => ListTile(
+                          title: Text(reminder.name),
+                          subtitle: Text(
+                              DateFormat('yyyy/MM/dd HH:mm').format(reminder.date)),
+                          leading: const Icon(Icons.notifications),
+                        )).toList(),
+                  )
+                : const Text('今日のリマインダーはありません'),
           ],
         ),
       ),

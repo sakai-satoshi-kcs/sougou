@@ -1,148 +1,97 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/timezone.dart' as tz;
-import 'package:timezone/data/latest.dart' as tz;
-import '../models/alarm.dart';
+import '../models/reminder.dart';
+import 'package:intl/intl.dart';
 
-class AlarmScreen extends StatefulWidget {
-  const AlarmScreen({super.key});
+class ReminderScreen extends StatefulWidget {
+  const ReminderScreen({super.key});
 
   @override
-  AlarmScreenState createState() => AlarmScreenState();
+  ReminderScreenState createState() => ReminderScreenState();
 }
 
-class AlarmScreenState extends State<AlarmScreen> {
-  final List<Alarm> _alarms = [];
-  final FlutterLocalNotificationsPlugin _notificationsPlugin =
-      FlutterLocalNotificationsPlugin();
+class ReminderScreenState extends State<ReminderScreen> {
+  final List<Reminder> _reminders = [];
 
   @override
   void initState() {
     super.initState();
-    tz.initializeTimeZones();
-    _initializeNotifications();
   }
 
-  /// 繰り返し設定をフォーマットする関数
-  String _formatRepeatDays(List<bool> repeatDays) {
-    const days = ['月', '火', '水', '木', '金', '土', '日'];
-    List<String> activeDays = [];
-
-    for (int i = 0; i < repeatDays.length; i++) {
-      if (repeatDays[i]) activeDays.add(days[i]);
-    }
-
-    return activeDays.isEmpty ? 'なし' : activeDays.join(', ');
-  }
-
-  void _initializeNotifications() async {
-    const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    const DarwinInitializationSettings iosSettings =
-        DarwinInitializationSettings();
-
-    const InitializationSettings settings =
-        InitializationSettings(android: androidSettings, iOS: iosSettings);
-
-    await _notificationsPlugin.initialize(settings);
-  }
-
-  void _setAlarmNotification(Alarm alarm, int id) async {
+  void _addReminder() {
     final now = DateTime.now();
-    final scheduledTime = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      alarm.time.hour,
-      alarm.time.minute,
+    final newReminder = Reminder(
+      name: "新しいリマインダー",
+      date: now,
+      time: TimeOfDay(hour: now.hour, minute: now.minute),
+      repeat: "なし",
+      priority: "普通",
     );
 
-    if (scheduledTime.isBefore(now)) return;
+    setState(() {
+      _reminders.add(newReminder);
+    });
+  }
 
-    final AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-      'alarm_channel',
-      'Alarm Notifications',
-      importance: Importance.high,
-      priority: Priority.high,
-      sound: RawResourceAndroidNotificationSound(alarm.sound),
-    );
-
-    final NotificationDetails details =
-        NotificationDetails(android: androidDetails);
-
-    await _notificationsPlugin.zonedSchedule(
-      id,
-      alarm.name,
-      '目覚ましアラームが鳴ります！',
-      tz.TZDateTime.from(scheduledTime, tz.local),
-      details,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-    );
+  void _removeReminder(int index) {
+    setState(() {
+      _reminders.removeAt(index);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('アラーム')),
-      body: _alarms.isEmpty
-          ? const Center(child: Text('アラームがありません'))
+      appBar: AppBar(title: const Text('リマインダー')),
+      body: _reminders.isEmpty
+          ? const Center(child: Text('リマインダーがありません'))
           : ListView.builder(
-              itemCount: _alarms.length,
+              itemCount: _reminders.length,
               itemBuilder: (context, index) {
-                final alarm = _alarms[index];
+                final reminder = _reminders[index];
                 return Card(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: SwitchListTile(
+                  child: ListTile(
                     title: Text(
-                      alarm.name,
+                      reminder.name,
                       style: const TextStyle(
-                          fontSize: 24, fontWeight: FontWeight.bold),
+                          fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     subtitle: Text(
-                      '時刻: ${alarm.time.format(context)}\n'
-                      '繰り返し: ${_formatRepeatDays(alarm.repeatDays)}\n'
-                      'サウンド: ${alarm.sound}',
-                      style: const TextStyle(fontSize: 18),
+                      '日時: ${DateFormat('yyyy/MM/dd HH:mm').format(reminder.date)}\n'
+                      '繰り返し: ${reminder.repeat}\n'
+                      '優先度: ${reminder.priority}',
+                      style: const TextStyle(fontSize: 16),
                     ),
-                    value: alarm.isEnabled,
-                    onChanged: (value) {
-                      setState(() {
-                        alarm.isEnabled = value;
-                      });
-                      if (value) {
-                        _setAlarmNotification(alarm, index);
-                      }
-                    },
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => _removeReminder(index),
+                    ),
                   ),
                 );
               },
             ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddAlarmDialog,
+        onPressed: _showAddReminderDialog,
         child: const Icon(Icons.add),
       ),
     );
   }
 
-  void _showAddAlarmDialog({Alarm? alarm, int? index}) {
+  void _showAddReminderDialog({Reminder? reminder, int? index}) {
     final formKey = GlobalKey<FormState>();
-    final nameController = TextEditingController(text: alarm?.name ?? '');
-    TimeOfDay? selectedTime = alarm?.time ?? TimeOfDay.now();
-    List<bool> repeatDays = alarm?.repeatDays ?? List.filled(7, false);
-    String selectedSound = alarm?.sound ?? 'default_alarm';
-    bool isEnabled = alarm?.isEnabled ?? true;
+    final nameController = TextEditingController(text: reminder?.name ?? '');
+    DateTime selectedDate = reminder?.date ?? DateTime.now();
+    TimeOfDay selectedTime = reminder?.time ?? TimeOfDay.now();
+    String selectedRepeat = reminder?.repeat ?? 'なし';
+    String selectedPriority = reminder?.priority ?? '普通';
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setStateDialog) => AlertDialog(
-          title: Text(alarm == null ? 'アラームを追加' : 'アラームを編集'),
+          title: Text(reminder == null ? 'リマインダーを追加' : 'リマインダーを編集'),
           content: SingleChildScrollView(
             child: Form(
               key: formKey,
@@ -159,18 +108,65 @@ class AlarmScreenState extends State<AlarmScreen> {
                     },
                   ),
                   ListTile(
-                    title: Text(selectedTime?.format(context) ?? '時間を選択'),
+                    title: Text(DateFormat('yyyy/MM/dd').format(selectedDate)),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: selectedDate,
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                      );
+                      if (picked != null) {
+                        setStateDialog(() {
+                          selectedDate = picked;
+                        });
+                      }
+                    },
+                  ),
+                  ListTile(
+                    title: Text(selectedTime.format(context)),
                     trailing: const Icon(Icons.access_time),
                     onTap: () async {
                       final picked = await showTimePicker(
                         context: context,
-                        initialTime: selectedTime ?? TimeOfDay.now(),
+                        initialTime: selectedTime,
                       );
                       if (picked != null) {
                         setStateDialog(() {
                           selectedTime = picked;
                         });
                       }
+                    },
+                  ),
+                  DropdownButtonFormField<String>(
+                    value: selectedRepeat,
+                    decoration: const InputDecoration(labelText: '繰り返し'),
+                    items: ['なし', '毎日', '毎週', '毎月']
+                        .map((repeat) => DropdownMenuItem(
+                              value: repeat,
+                              child: Text(repeat),
+                            ))
+                        .toList(),
+                    onChanged: (value) {
+                      setStateDialog(() {
+                        selectedRepeat = value!;
+                      });
+                    },
+                  ),
+                  DropdownButtonFormField<String>(
+                    value: selectedPriority,
+                    decoration: const InputDecoration(labelText: '優先度'),
+                    items: ['低', '普通', '高']
+                        .map((priority) => DropdownMenuItem(
+                              value: priority,
+                              child: Text(priority),
+                            ))
+                        .toList(),
+                    onChanged: (value) {
+                      setStateDialog(() {
+                        selectedPriority = value!;
+                      });
                     },
                   ),
                 ],
@@ -185,13 +181,19 @@ class AlarmScreenState extends State<AlarmScreen> {
               onPressed: () {
                 if (formKey.currentState!.validate()) {
                   setState(() {
-                    _alarms.add(Alarm(
+                    final newReminder = Reminder(
                       name: nameController.text,
-                      time: selectedTime!,
-                      repeatDays: repeatDays,
-                      sound: selectedSound,
-                      isEnabled: isEnabled,
-                    ));
+                      date: selectedDate,
+                      time: selectedTime,
+                      repeat: selectedRepeat,
+                      priority: selectedPriority,
+                    );
+
+                    if (index == null) {
+                      _reminders.add(newReminder);
+                    } else {
+                      _reminders[index] = newReminder;
+                    }
                   });
                   Navigator.pop(context);
                 }

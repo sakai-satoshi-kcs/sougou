@@ -1,8 +1,8 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz;
+import '../models/alarm.dart';
 
 class AlarmScreen extends StatefulWidget {
   const AlarmScreen({super.key});
@@ -12,10 +12,9 @@ class AlarmScreen extends StatefulWidget {
 }
 
 class AlarmScreenState extends State<AlarmScreen> {
+  final List<Alarm> _alarms = [];
   final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
-
-  List<Map<String, dynamic>> _alarms = [];
 
   @override
   void initState() {
@@ -37,160 +36,191 @@ class AlarmScreenState extends State<AlarmScreen> {
     await _notificationsPlugin.initialize(settings);
   }
 
-  Future<void> _setAlarm(TimeOfDay selectedTime) async {
+  void _setAlarmNotification(Alarm alarm, int id) async {
     final now = DateTime.now();
     final scheduledTime = DateTime(
       now.year,
       now.month,
       now.day,
-      selectedTime.hour,
-      selectedTime.minute,
+      alarm.time.hour,
+      alarm.time.minute,
     );
-    final tz.TZDateTime scheduledTZTime =
-        tz.TZDateTime.from(scheduledTime, tz.local);
 
-    const AndroidNotificationDetails androidDetails =
+    if (scheduledTime.isBefore(now)) return;
+
+    final AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
       'alarm_channel',
       'Alarm Notifications',
       importance: Importance.high,
       priority: Priority.high,
-      sound: RawResourceAndroidNotificationSound('alarm_sound'),
+      sound: RawResourceAndroidNotificationSound(alarm.sound),
     );
 
-    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails();
-    const NotificationDetails details =
-        NotificationDetails(android: androidDetails, iOS: iosDetails);
-
-    int alarmId = _alarms.length;
+    final NotificationDetails details =
+        NotificationDetails(android: androidDetails);
 
     await _notificationsPlugin.zonedSchedule(
-      alarmId,
-      'アラーム',
-      '設定した時間になりました',
-      scheduledTZTime,
+      id,
+      alarm.name,
+      'アラームが鳴ります！',
+      tz.TZDateTime.from(scheduledTime, tz.local),
       details,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
     );
-
-    setState(() {
-      _alarms = List.from(_alarms)
-        ..add({'id': alarmId, 'time': selectedTime, 'enabled': true});
-    });
-  }
-
-  Future<void> _selectTime(BuildContext context) async {
-    DateTime now = DateTime.now();
-    DateTime initialTime =
-        DateTime(now.year, now.month, now.day, now.hour, now.minute);
-    TimeOfDay defaultPicked =
-        TimeOfDay(hour: now.hour, minute: now.minute); // 🔹 修正: デフォルト値を設定
-    TimeOfDay? picked;
-
-    picked = await showCupertinoModalPopup<TimeOfDay>(
-      context: context,
-      builder: (BuildContext context) {
-        TimeOfDay tempPicked = defaultPicked; // 🔹 修正: 一時変数でデフォルト値を保持
-        return Container(
-          height: 250,
-          color: Colors.white,
-          child: Column(
-            children: [
-              SizedBox(
-                height: 200,
-                child: CupertinoDatePicker(
-                  mode: CupertinoDatePickerMode.time,
-                  initialDateTime: initialTime,
-                  use24hFormat: true,
-                  onDateTimeChanged: (DateTime newTime) {
-                    tempPicked =
-                        TimeOfDay(hour: newTime.hour, minute: newTime.minute);
-                  },
-                ),
-              ),
-              CupertinoButton(
-                child: const Text("OK", style: TextStyle(fontSize: 18)),
-                onPressed: () {
-                  Navigator.of(context)
-                      .pop(tempPicked); // 🔹 修正: `null` にならないようにする
-                },
-              )
-            ],
-          ),
-        );
-      },
-    );
-
-    if (picked != null) {
-      _setAlarm(picked); // 🔹 `picked!` を使用せず、確実に `TimeOfDay` 型になる
-    }
-  }
-
-  void _toggleAlarm(int index) {
-    setState(() {
-      _alarms[index]['enabled'] = !_alarms[index]['enabled'];
-    });
   }
 
   void _removeAlarm(int index) {
     setState(() {
-      _alarms = List.from(_alarms)..removeAt(index);
+      _alarms.removeAt(index);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        middle: const Text('アラーム'),
-        trailing: GestureDetector(
-          onTap: () => _selectTime(context),
-          child: const Icon(CupertinoIcons.add),
-        ),
-      ),
-      child: SafeArea(
-        child: ListView.builder(
-          itemCount: _alarms.length,
-          itemBuilder: (context, index) {
-            final alarm = _alarms[index];
-            return Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${alarm['time'].hour.toString().padLeft(2, '0')}:${alarm['time'].minute.toString().padLeft(2, '0')}',
-                        style: const TextStyle(
-                            fontSize: 32, fontWeight: FontWeight.bold),
-                      ),
-                      const Text('アラーム',
-                          style: TextStyle(fontSize: 16, color: Colors.grey)),
-                    ],
+    return Scaffold(
+      appBar: AppBar(title: const Text('アラーム')),
+      body: _alarms.isEmpty
+          ? const Center(
+              child: Text(
+                'アラームがありません',
+                style: TextStyle(fontSize: 18, color: Colors.grey),
+              ),
+            )
+          : ListView.builder(
+              itemCount: _alarms.length,
+              itemBuilder: (context, index) {
+                final alarm = _alarms[index];
+                return Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  Row(
-                    children: [
-                      CupertinoSwitch(
-                        value: alarm['enabled'],
-                        onChanged: (value) => _toggleAlarm(index),
-                      ),
-                      CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        child: const Icon(CupertinoIcons.delete,
-                            color: Colors.red),
-                        onPressed: () => _removeAlarm(index),
-                      ),
-                    ],
+                  elevation: 4,
+                  child: ListTile(
+                    title: Text(
+                      alarm.name,
+                      style: const TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(
+                      '時刻: ${alarm.time.format(context)}\n'
+                      '繰り返し: ${_formatRepeatDays(alarm.repeatDays)}\n'
+                      'サウンド: ${alarm.sound}',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    trailing: Switch(
+                      value: alarm.isEnabled,
+                      onChanged: (value) {
+                        setState(() {
+                          alarm.isEnabled = value;
+                        });
+                        if (value) {
+                          _setAlarmNotification(alarm, index);
+                        }
+                      },
+                    ),
+                    onLongPress: () => _removeAlarm(index), // 長押しで削除
+                    onTap: () => _showAddAlarmDialog(alarm: alarm, index: index), // タップで編集
+                  ),
+                );
+              },
+            ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddAlarmDialog,
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  String _formatRepeatDays(List<bool> repeatDays) {
+    const days = ['月', '火', '水', '木', '金', '土', '日'];
+    List<String> activeDays = [];
+
+    for (int i = 0; i < repeatDays.length; i++) {
+      if (repeatDays[i]) activeDays.add(days[i]);
+    }
+
+    return activeDays.isEmpty ? 'なし' : activeDays.join(', ');
+  }
+
+  void _showAddAlarmDialog({Alarm? alarm, int? index}) {
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController(text: alarm?.name ?? '');
+    TimeOfDay selectedTime = alarm?.time ?? TimeOfDay.now();
+    List<bool> repeatDays = alarm?.repeatDays ?? List.filled(7, false);
+    String selectedSound = alarm?.sound ?? 'default_alarm';
+    bool isEnabled = alarm?.isEnabled ?? true;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateDialog) => AlertDialog(
+          title: Text(alarm == null ? 'アラームを追加' : 'アラームを編集'),
+          content: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: nameController,
+                    decoration: const InputDecoration(labelText: '名前'),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return '名前を入力してください';
+                      }
+                      return null;
+                    },
+                  ),
+                  ListTile(
+                    title: Text(selectedTime.format(context)),
+                    trailing: const Icon(Icons.access_time),
+                    onTap: () async {
+                      final picked = await showTimePicker(
+                        context: context,
+                        initialTime: selectedTime,
+                      );
+                      if (picked != null) {
+                        setStateDialog(() {
+                          selectedTime = picked;
+                        });
+                      }
+                    },
                   ),
                 ],
               ),
-            );
-          },
+            ),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('キャンセル')),
+            TextButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  setState(() {
+                    final newAlarm = Alarm(
+                      name: nameController.text,
+                      time: selectedTime,
+                      repeatDays: repeatDays,
+                      sound: selectedSound,
+                      isEnabled: isEnabled,
+                    );
+
+                    if (index == null) {
+                      _alarms.add(newAlarm);
+                    } else {
+                      _alarms[index] = newAlarm;
+                    }
+                  });
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('保存'),
+            ),
+          ],
         ),
       ),
     );
